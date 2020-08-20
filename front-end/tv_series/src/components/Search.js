@@ -1,4 +1,4 @@
-import React,  { useEffect, useState } from 'react';
+import React, { Component } from 'react';
 import Axios from 'axios';
 
 import InputGroup from 'react-bootstrap/InputGroup'
@@ -8,56 +8,64 @@ import FormControl from 'react-bootstrap/FormControl'
 
 import '../css/search.css';
 
-function Search() {
-	 const [TVSeries, setTVSeries] = useState([])
-	 const [Query, setQuery] = useState("")
+class Search extends Component {
 
-	 useEffect(() => {
+    constructor(props){
+        super(props);
 
-        getTVSeries()
+        // Declare states of query input and TVseries output result
+        this.state = {
+            query: '',
+            TVSeries : []
+        }
+    }
 
-    }, [])
+    // When user type something in the search input, get the input value and keep it in the 'query' 
+    handleOnInputChange = (e) => {
+        const query = e.target.value;
+        console.warn(query);
+        this.setState({query:query})
+    }
 
-    const getTVSeries = () => {
-        Axios.get('http://localhost:5000/get-TVSereies')
-            .then(response => {
-                if (response.data.success) {
-                        setTVSeries(response.data.tvSeries)
-                    } else {
-                    alert('Failed to fectch datas')
-                }
+    // After clicking search button search through the data file 
+    handleOnInputSubmit = (e) => {
+        e.preventDefault();
+
+        const {query} = this.state;
+        this.setState({query:query})
+        this.state.TVSeries = [];
+        console.log({query})
+
+        Axios.get('http://localhost:5000/search', {params: {query: query} })
+            .then(res => {
+                this.setState({
+                    TVSeries: res.data
+                });
             })
+          .catch((error) => {
+            console.log(error);
+          }) 
     }
-
-	 const handleOnInputChange = (e) => {
-        setQuery(e.target.value) 
-    }
-
-    const handleOnInputSubmit = (e) => {
-
-    	e.preventDefault();
-    	setQuery(e.target.value) 
-
-        getTVSeries()
-
-    }
-
-    var TVSeriesCount = TVSeries.length;
-
-  return (
-    <>
-        <div className="jumbotron">
+                       
+    render() {
+        const {query} = this.state;
+        const {TVSeries} = this.state;
+        var TVSeriesCount = TVSeries.length;
+        
+        return (
+            <>
+            <div className="jumbotron">
                 <h1 id="title">TV Series Search Engine</h1>
                 {/* Search Input */}
-                <Form onSubmit={handleOnInputSubmit} style={{margin: '0px 50px'}}>
+                <Form onSubmit={this.handleOnInputSubmit} style={{margin: '0px 50px'}}>
                     <InputGroup className="mb-3">
                         <FormControl
                             placeholder="Search your favorite TV series..."
                             aria-label="TV series name"
                             aria-describedby="basic-addon2"
                             type="text"
-                            value= {Query}
-                            onChange = {handleOnInputChange}
+                            value= {query}
+                            onChange = {this.handleOnInputChange}
                         />
                         <InputGroup.Append>
                             <Button variant="outline-light" type='submit' style={{paddingLeft:'30px', paddingRight:'30px'}}>
@@ -67,13 +75,11 @@ function Search() {
                     </InputGroup>
                 </Form>
             </div>
-
-          {TVSeriesCount !== 0? 
+            {TVSeriesCount !== 0? 
                 <div className="container">
-                    {/* Display the results*/}
                     {TVSeries.map((TVShowName) => {
-                        for(let i=0; i< TVSeries.length; i++){
-                            if(TVSeries[i] == TVShowName){
+                        for(let i=0; i< Math.min(TVSeriesCount,3); i++){
+                            if(this.state.TVSeries[i] == TVShowName){
                                 return <h4 id="tv-show">{TVShowName}</h4>
                             }
                         }
@@ -84,8 +90,11 @@ function Search() {
                     <h6>Search and enjoy your favorite TV series.... </h6>
                 </div>
             }
-    </>
-  );
+            
+          </>
+        )
+    }
 }
 
-export default Search;
+export default Search
+
